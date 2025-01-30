@@ -62,13 +62,41 @@ int main() {
         std::string translationInput;
         std::getline(std::cin, translationInput);
         Vec3 translation;
-        if (translationInput.empty()) {
-            translation = Vec3(-3, 5, -1); // Valeurs par défaut
-        } else {
-            std::istringstream iss(translationInput);
+        // Si l'entrée n'est pas vide, on vérifie si elle contient trois nombres valides
+        if (!translationInput.empty()) {
             float x, y, z;
-            iss >> x >> y >> z;
-            translation = Vec3(x, y, z);
+            std::istringstream iss(translationInput);
+            bool isValid = false;
+            // Validation de la saisie
+            while (!isValid) {
+                // Essayer d'extraire trois valeurs de la chaîne
+                if (iss >> x >> y >> z) {
+                    isValid = true;  // Si les trois valeurs sont extraites correctement, on valide
+                } else {
+                    std::cout << "Erreur : veuillez entrer trois nombres valides (x y z).\n";
+                    std::cout << "Entrez les coordonnees de translation (x y z) ou appuyez sur Entrer pour utiliser les valeurs par defaut (-3 5 -1) : ";
+                    std::getline(std::cin, translationInput);  // Lire une nouvelle entrée
+                    // Si l'utilisateur appuie sur Entrer sans rien entrer, on arrete la boucle car on vas utiliser les valeurs par defaut
+                    if (translationInput.empty()) {
+                        break;
+                    }
+                    // Réinitialiser le flux de stringstream pour tenter à nouveau
+                    iss.clear();
+                    iss.str(translationInput);
+                }
+            }
+            // Si la saisie est valide, on attribue le vecteur à translation
+            if (isValid) {
+                translation = Vec3(x, y, z);
+            }
+            else //sinon c'est qu'elle etait vide
+            {
+                translation = Vec3(-3, 5, 1);
+            }
+        }
+        else
+        {
+            translation = Vec3(-3, 5, 1);
         }
         
         bool angleValid = false;
