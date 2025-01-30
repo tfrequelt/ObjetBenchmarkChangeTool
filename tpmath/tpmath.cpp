@@ -70,14 +70,26 @@ int main() {
             iss >> x >> y >> z;
             translation = Vec3(x, y, z);
         }
-
-        // Saisie de l'angle de rotation
-        std::cout << "Entrez l'angle de rotation en degres ou appuyez sur Entrer pour utiliser la valeur par defaut (72) : ";
-        std::string rotationInput;
-        std::getline(std::cin, rotationInput);
+        
+        bool angleValid = false;
         float rotationAngle = 72.0f; // Valeur par défaut
-        if (!rotationInput.empty()) {
-            rotationAngle = std::stof(rotationInput);
+        while (!angleValid)
+        {
+            // Saisie de l'angle de rotation
+            std::cout << "Entrez l'angle de rotation en degres ou appuyez sur Entrer pour utiliser la valeur par defaut (72) : ";
+            std::string rotationInput;
+            std::getline(std::cin, rotationInput);
+            if (rotationInput.empty()) {
+                break;
+            }
+            try
+            {
+                rotationAngle = std::stof(rotationInput);
+                angleValid = true;
+            }catch (const std::invalid_argument& e)
+            {
+                std::cout << "Veuillez rentrer un angle valide. \n ";
+            }
         }
 
         // Création de la transformation
