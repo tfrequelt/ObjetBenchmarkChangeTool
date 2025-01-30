@@ -87,6 +87,13 @@ int main() {
         std::cout << "Entrez les coordonnees du vecteur dans le repere objet (x y z) : ";
         float x, y, z;
         std::cin >> x >> y >> z;
+        while (std::cin.fail())
+        {
+            std::cin.clear(); // Réinitialise le flag d'erreur
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Vide le buffer
+            std::cout << "Veuillez entrer un vecteur correct. \n Entrez les coordonnees du vecteur dans le repere objet (x y z) : ";
+            std::cin >> x >> y >> z;
+        }
         Vec3 objectVector(x, y, z);
         std::cin.ignore(); // Nettoyer le buffer d'entrée
 
