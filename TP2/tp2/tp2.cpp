@@ -1,158 +1,222 @@
 #define _USE_MATH_DEFINES
-
 #include <iostream>
-#include <sstream>
+#include <vector>
 #include <cmath>
 
-// Classe pour représenter un vecteur 3D
-class Vec3 {
-public:
-    float x, y, z;
+using namespace std;
 
-    Vec3() : x(0), y(0), z(0) {}
-    Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+// Structure pour un vecteur 3D
+struct Vector3 {
+    double x, y, z;
 
-    void print() const {
-        std::cout << "(" << x << ", " << y << ", " << z << ")" << std::endl;
-    }
-
-    Vec3 operator+(const Vec3& other) const {
-        return Vec3(x + other.x, y + other.y, z + other.z);
-    }
-
-    Vec3 transformByMatrix(const float matrix[3][3]) const {
-        return Vec3(
-            x * matrix[0][0] + y * matrix[0][1] + z * matrix[0][2],
-            x * matrix[1][0] + y * matrix[1][1] + z * matrix[1][2],
-            x * matrix[2][0] + y * matrix[2][1] + z * matrix[2][2]
-        );
+    void afficher() const {
+        cout << "(" << x << ", " << y << ", " << z << ")" << endl;
     }
 };
 
-class Transform {
+// Classe pour une matrice 4x4
+class Matrix4x4 {
 public:
-    Vec3 translation;
-    float rotationMatrix[3][3];
+    double m[4][4];
 
-    Transform(const Vec3& translation, float rotationAngleDegrees) {
-        this->translation = translation;
-        setRotationMatrix(rotationAngleDegrees);
+    Matrix4x4() {
+        for (int i = 0; i < 4; ++i)
+            for (int j = 0; j < 4; ++j)
+                m[i][j] = (i == j) ? 1.0 : 0.0;
     }
 
-    void setRotationMatrix(float angleDegrees) {
-        float angleRadians = angleDegrees * M_PI / 180.0f;
-        float cosTheta = cos(angleRadians);
-        float sinTheta = sin(angleRadians);
-
-        rotationMatrix[0][0] = cosTheta; rotationMatrix[0][1] = 0; rotationMatrix[0][2] = sinTheta;
-        rotationMatrix[1][0] = 0;        rotationMatrix[1][1] = 1; rotationMatrix[1][2] = 0;
-        rotationMatrix[2][0] = -sinTheta; rotationMatrix[2][1] = 0; rotationMatrix[2][2] = cosTheta;
+    // Multiplier la matrice par un vecteur 3D
+    Vector3 appliquer(const Vector3& v) const {
+        Vector3 res;
+        res.x = m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z + m[0][3];
+        res.y = m[1][0] * v.x + m[1][1] * v.y + m[1][2] * v.z + m[1][3];
+        res.z = m[2][0] * v.x + m[2][1] * v.y + m[2][2] * v.z + m[2][3];
+        return res;
     }
 
-    Vec3 apply(const Vec3& vector) const {
-        Vec3 rotated = vector.transformByMatrix(rotationMatrix);
-        return rotated + translation;
+    // Multiplier deux matrices entre elles
+    Matrix4x4 operator*(const Matrix4x4& other) const {
+        Matrix4x4 res;
+        for (int i = 0; i < 4; ++i)
+            for (int j = 0; j < 4; ++j) {
+                res.m[i][j] = 0;
+                for (int k = 0; k < 4; ++k)
+                    res.m[i][j] += m[i][k] * other.m[k][j];
+            }
+        return res;
     }
 };
 
+// Création des matrices de transformation
+Matrix4x4 creerMatriceTranslation(double tx, double ty, double tz) {
+    Matrix4x4 mat;
+    mat.m[0][3] = tx;
+    mat.m[1][3] = ty;
+    mat.m[2][3] = tz;
+    return mat;
+}
+
+Matrix4x4 creerMatriceEchelle(double sx, double sy, double sz) {
+    Matrix4x4 mat;
+    mat.m[0][0] = sx;
+    mat.m[1][1] = sy;
+    mat.m[2][2] = sz;
+    return mat;
+}
+
+Matrix4x4 creerMatriceRotationX(double angle) {
+    Matrix4x4 mat;
+    double rad = angle * M_PI / 180.0;
+    mat.m[1][1] = cos(rad);
+    mat.m[1][2] = -sin(rad);
+    mat.m[2][1] = sin(rad);
+    mat.m[2][2] = cos(rad);
+    return mat;
+}
+
+Matrix4x4 creerMatriceRotationY(double angle) {
+    Matrix4x4 mat;
+    double rad = angle * M_PI / 180.0;
+    mat.m[0][0] = cos(rad);
+    mat.m[0][2] = sin(rad);
+    mat.m[2][0] = -sin(rad);
+    mat.m[2][2] = cos(rad);
+    return mat;
+}
+
+Matrix4x4 creerMatriceRotationZ(double angle) {
+    Matrix4x4 mat;
+    double rad = angle * M_PI / 180.0;
+    mat.m[0][0] = cos(rad);
+    mat.m[0][1] = -sin(rad);
+    mat.m[1][0] = sin(rad);
+    mat.m[1][1] = cos(rad);
+    return mat;
+}
+
+// Matrice de cisaillement
+Matrix4x4 creerMatriceCisaillement(double kxy, double kxz, double kyx, double kyz, double kzx, double kzy) {
+    Matrix4x4 mat;
+    mat.m[0][1] = kxy;
+    mat.m[0][2] = kxz;
+    mat.m[1][0] = kyx;
+    mat.m[1][2] = kyz;
+    mat.m[2][0] = kzx;
+    mat.m[2][1] = kzy;
+    return mat;
+}
+
+// Matrice de projection perspective
+Matrix4x4 creerMatriceProjection(double f) {
+    Matrix4x4 mat;
+    mat.m[3][2] = -1.0 / f;  // Perspective simple
+    return mat;
+}
+
+// Matrice de réflexion
+Matrix4x4 creerMatriceReflexion(bool x, bool y, bool z) {
+    Matrix4x4 mat;
+    if (x) mat.m[0][0] = -1;
+    if (y) mat.m[1][1] = -1;
+    if (z) mat.m[2][2] = -1;
+    return mat;
+}
+
+// Fonction principale
 int main() {
+    Vector3 point;
+    cout << "Entrez les coordonnees du point (x y z) : ";
+    cin >> point.x >> point.y >> point.z;
+
+    Matrix4x4 transformationTotale;
+
     while (true) {
-        // Saisie de la translation
-        std::cout << "Entrez les coordonnees de translation (x y z) ou appuyez sur Entrer pour utiliser les valeurs par defaut (-3 5 -1) : ";
-        std::string translationInput;
-        std::getline(std::cin, translationInput);
-        Vec3 translation;
-        // Si l'entrée n'est pas vide, on vérifie si elle contient trois nombres valides
-        if (!translationInput.empty()) {
-            float x, y, z;
-            std::istringstream iss(translationInput);
-            bool isValid = false;
-            // Validation de la saisie
-            while (!isValid) {
-                // Essayer d'extraire trois valeurs de la chaîne
-                if (iss >> x >> y >> z) {
-                    isValid = true;  // Si les trois valeurs sont extraites correctement, on valide
-                } else {
-                    std::cout << "Erreur : veuillez entrer trois nombres valides (x y z).\n";
-                    std::cout << "Entrez les coordonnees de translation (x y z) ou appuyez sur Entrer pour utiliser les valeurs par defaut (-3 5 -1) : ";
-                    std::getline(std::cin, translationInput);  // Lire une nouvelle entrée
-                    // Si l'utilisateur appuie sur Entrer sans rien entrer, on arrete la boucle car on vas utiliser les valeurs par defaut
-                    if (translationInput.empty()) {
-                        break;
-                    }
-                    // Réinitialiser le flux de stringstream pour tenter à nouveau
-                    iss.clear();
-                    iss.str(translationInput);
-                }
-            }
-            // Si la saisie est valide, on attribue le vecteur à translation
-            if (isValid) {
-                translation = Vec3(x, y, z);
-            }
-            else //sinon c'est qu'elle etait vide
-            {
-                translation = Vec3(-3, 5, 1);
-            }
+        cout << "\nChoisissez une transformation :\n";
+        cout << "1. Translation\n";
+        cout << "2. Mise a l echelle\n";
+        cout << "3. Rotation (X, Y, Z)\n";
+        cout << "4. Cisaillement\n";
+        cout << "5. Projection\n";
+        cout << "6. Reflexion\n";
+        cout << "7. Quitter\n";
+        int choix;
+        cin >> choix;
+
+        if (choix == 1) {
+            double tx, ty, tz;
+            cout << "Entrez les valeurs de translation (tx ty tz) : ";
+            cin >> tx >> ty >> tz;
+            transformationTotale = transformationTotale * creerMatriceTranslation(tx, ty, tz);
+            Vector3 result = transformationTotale.appliquer(point);
+            cout << "Resultat apres transformation : ";
+            result.afficher();
         }
-        else
-        {
-            translation = Vec3(-3, 5, 1);
+        else if (choix == 2) {
+            double sx, sy, sz;
+            cout << "Entrez les valeurs d echelle (sx sy sz) : ";
+            cin >> sx >> sy >> sz;
+            transformationTotale = transformationTotale * creerMatriceEchelle(sx, sy, sz);
+            Vector3 result = transformationTotale.appliquer(point);
+            cout << "Resultat apres transformation : ";
+            result.afficher();
         }
-        
-        bool angleValid = false;
-        float rotationAngle = 72.0f; // Valeur par défaut
-        while (!angleValid)
-        {
-            // Saisie de l'angle de rotation
-            std::cout << "Entrez l'angle de rotation en degres ou appuyez sur Entrer pour utiliser la valeur par defaut (72) : ";
-            std::string rotationInput;
-            std::getline(std::cin, rotationInput);
-            if (rotationInput.empty()) {
-                break;
-            }
-            try
-            {
-                rotationAngle = std::stof(rotationInput);
-                angleValid = true;
-            }catch (const std::invalid_argument& e)
-            {
-                std::cout << "Veuillez rentrer un angle valide. \n ";
-            }
+        else if (choix == 3) {
+            cout << "Choisissez l axe de rotation : X (1), Y (2), Z (3) : ";
+            int axe;
+            cin >> axe;
+            double angle;
+            cout << "Entrez l angle en degres : ";
+            cin >> angle;
+
+            if (axe == 1)
+                transformationTotale = transformationTotale * creerMatriceRotationX(angle);
+            else if (axe == 2)
+                transformationTotale = transformationTotale * creerMatriceRotationY(angle);
+            else if (axe == 3)
+                transformationTotale = transformationTotale * creerMatriceRotationZ(angle);
+            Vector3 result = transformationTotale.appliquer(point);
+            cout << "Resultat apres transformation : ";
+            result.afficher();
         }
-
-        // Création de la transformation
-        Transform transform(translation, rotationAngle);
-
-        // Demande des coordonnées du vecteur à transformer
-        std::cout << "Entrez les coordonnees du vecteur dans le repere objet (x y z) : ";
-        float x, y, z;
-        std::cin >> x >> y >> z;
-        while (std::cin.fail())
-        {
-            std::cin.clear(); // Réinitialise le flag d'erreur
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Vide le buffer
-            std::cout << "Veuillez entrer un vecteur correct. \n Entrez les coordonnees du vecteur dans le repere objet (x y z) : ";
-            std::cin >> x >> y >> z;
+        else if (choix == 4) {  // Cisaillement
+            double kxy, kxz, kyx, kyz, kzx, kzy;
+            cout << "Entrez les coefficients de cisaillement (kxy kxz kyx kyz kzx kzy) : ";
+            cin >> kxy >> kxz >> kyx >> kyz >> kzx >> kzy;
+            Matrix4x4 C = creerMatriceCisaillement(kxy, kxz, kyx, kyz, kzx, kzy);
+            transformationTotale = transformationTotale * C;
+            Vector3 result = transformationTotale.appliquer(point);
+            cout << "Resultat apres transformation : ";
+            result.afficher();
         }
-        Vec3 objectVector(x, y, z);
-        std::cin.ignore(); // Nettoyer le buffer d'entrée
-
-        // Transformation du vecteur
-        Vec3 worldVector = transform.apply(objectVector);
-
-        // Affichage du résultat
-        std::cout << "Le vecteur dans le repere universel est : ";
-        worldVector.print();
-
-        // Demander si l'utilisateur veut continuer
-        char choice;
-        std::cout << "Voulez-vous transformer un autre vecteur ? (o/n) : ";
-        std::cin >> choice;
-        std::cin.ignore(); // Nettoyer le buffer d'entrée
-
-        if (choice == 'n' || choice == 'N') {
-            std::cout << "Fin du programme." << std::endl;
+        else if (choix == 5) {  // Projection
+            double f;
+            cout << "Entrez la distance focale : ";
+            cin >> f;
+            Matrix4x4 P = creerMatriceProjection(f);
+            transformationTotale = transformationTotale * P;
+            Vector3 result = transformationTotale.appliquer(point);
+            cout << "Resultat apres transformation : ";
+            result.afficher();
+        }
+        else if (choix == 6) {  // Réflexion
+            bool rx, ry, rz;
+            cout << "Reflexion par rapport a X ? (1 = Oui, 0 = Non) : ";
+            cin >> rx;
+            cout << "Reflexion par rapport a Y ? (1 = Oui, 0 = Non) : ";
+            cin >> ry;
+            cout << "Reflexion par rapport a Z ? (1 = Oui, 0 = Non) : ";
+            cin >> rz;
+            Matrix4x4 R = creerMatriceReflexion(rx, ry, rz);
+            transformationTotale = transformationTotale * R;
+            Vector3 result = transformationTotale.appliquer(point);
+            cout << "Resultat apres transformation : ";
+            result.afficher();
+        }
+        else if (choix == 7) {
             break;
+        }
+        else {
+            cout << "Choix invalide !\n";
         }
     }
 
