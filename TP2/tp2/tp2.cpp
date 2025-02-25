@@ -55,7 +55,7 @@ Matrix4x4 creerMatriceTranslation(double tx, double ty, double tz) {
     mat.m[2][3] = tz;
     return mat;
 }
-
+// Création d'une matrice pour la mise a l'echelle
 Matrix4x4 creerMatriceEchelle(double sx, double sy, double sz) {
     Matrix4x4 mat;
     mat.m[0][0] = sx;
@@ -63,7 +63,7 @@ Matrix4x4 creerMatriceEchelle(double sx, double sy, double sz) {
     mat.m[2][2] = sz;
     return mat;
 }
-
+//les 3 prochaines fonction servent a appliquer une rotation et il y a une fonction par axe de rotation
 Matrix4x4 creerMatriceRotationX(double angle) {
     Matrix4x4 mat;
     double rad = angle * M_PI / 180.0;
@@ -106,13 +106,20 @@ Matrix4x4 creerMatriceCisaillement(double kxy, double kxz, double kyx, double ky
     return mat;
 }
 
-// Matrice de projection perspective
-Matrix4x4 creerMatriceProjection(double f) {
-    Matrix4x4 mat;
-    mat.m[3][2] = -1.0 / f;  // Perspective simple
-    return mat;
-}
+// Fonction pour appliquer une projection en perspective
+Vector3 FaireProjectionPerspective(const Vector3& point, float d) {
+    // Vérifier que z ≠ 0 pour éviter la division par zéro
+    if (point.z == 0.0f) {
+        std::cerr << "Erreur : La projection n'est pas définie pour z = 0." << std::endl;
+        return point;
+    }
 
+    // Appliquer la transformation de projection
+    float x_prime = (d * point.x) / point.z;
+    float y_prime = (d * point.y) / point.z;
+    float z_prime = d; // Par convention
+    return {x_prime, y_prime, z_prime};
+}
 // Matrice de réflexion
 Matrix4x4 creerMatriceReflexion(bool x, bool y, bool z) {
     Matrix4x4 mat;
@@ -190,11 +197,9 @@ int main() {
         }
         else if (choix == 5) {  // Projection
             double f;
-            cout << "Entrez la distance focale : ";
+            cout << "Entrez la nouvelle coordonee de z : ";
             cin >> f;
-            Matrix4x4 P = creerMatriceProjection(f);
-            transformationTotale = transformationTotale * P;
-            Vector3 result = transformationTotale.appliquer(point);
+            Vector3 result = FaireProjectionPerspective(point, f);
             cout << "Resultat apres transformation : ";
             result.afficher();
         }
