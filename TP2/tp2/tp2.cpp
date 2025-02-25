@@ -200,6 +200,9 @@ int main() {
             cout << "Entrez la nouvelle coordonee de z : ";
             cin >> f;
             Vector3 result = FaireProjectionPerspective(point, f);
+            //ne mets pas a jour point je ne sais pas pourquoi
+            //ou alors c'est qu'il faut mettre a jour transformation totale
+            point = result;
             cout << "Resultat apres transformation : ";
             result.afficher();
         }
