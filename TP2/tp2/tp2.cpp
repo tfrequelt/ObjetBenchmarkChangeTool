@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <cassert>
 
 using namespace std;
 
@@ -129,11 +130,93 @@ Matrix4x4 creerMatriceReflexion(bool x, bool y, bool z) {
     return mat;
 }
 
+bool saisirValeur(double &valeur) {
+    cin >> valeur;
+    if (cin.fail()) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Entree invalide, veuillez entrer un nombre valide.\n";
+        return false;
+    }
+    return true;
+}
+
+int saisirEntier(int min, int max) {
+    int valeur;
+    while (true) {
+        cin >> valeur;
+        if (cin.fail() || valeur < min || valeur > max) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Entree invalide, veuillez entrer un nombre entre " << min << " et " << max << ".\n";
+        } else {
+            return valeur;
+        }
+    }
+}
+
+// Fonction pour exécuter les tests unitaires
+void executerTests() {
+    cout << "Début des tests unitaires...\n";
+
+    // Test de la translation
+    Vector3 point = {1, 1, 1};
+    Matrix4x4 translation = creerMatriceTranslation(2, 3, 4);
+    Vector3 result = translation.appliquer(point);
+    assert(result.x == 3 && result.y == 4 && result.z == 5);
+    cout << "Test Translation réussi !\n";
+
+    // Test de mise à l'échelle
+    Matrix4x4 echelle = creerMatriceEchelle(2, 2, 2);
+    result = echelle.appliquer(point);
+    assert(result.x == 2 && result.y == 2 && result.z == 2);
+    cout << "Test Mise à l'échelle réussi !\n";
+
+    // Test de rotation X de 90°
+    Matrix4x4 rotationX = creerMatriceRotationX(90);
+    result = rotationX.appliquer(point);
+    assert(abs(result.x - 1) < 1e-6 && abs(result.y - (-1)) < 1e-6 && abs(result.z - 1) < 1e-6);
+    cout << "Test Rotation X réussi !\n";
+
+    // Test de rotation Y de 90°
+    Matrix4x4 rotationY = creerMatriceRotationY(90);
+    result = rotationY.appliquer(point);
+    assert(abs(result.x - 1) < 1e-6 && abs(result.y - 1) < 1e-6 && abs(result.z - (-1)) < 1e-6);
+    cout << "Test Rotation Y réussi !\n";
+
+    // Test de rotation Z de 90°
+    Matrix4x4 rotationZ = creerMatriceRotationZ(90);
+    result = rotationZ.appliquer(point);
+    assert(abs(result.x - (-1)) < 1e-6 && abs(result.y - 1) < 1e-6 && abs(result.z - 1) < 1e-6);
+    cout << "Test Rotation Z réussi !\n";
+
+    // Test de cisaillement
+    Matrix4x4 cisaillement = creerMatriceCisaillement(1, 0, 0, 1, 0, 0);
+    result = cisaillement.appliquer(point);
+    assert(abs(result.x - (1 + 1 * 1)) < 1e-6 && abs(result.y - (1 + 1 * 1)) < 1e-6 && abs(result.z - 1) < 1e-6);
+    cout << "Test Cisaillement réussi !\n";
+
+    // Test de réflexion par rapport à l'axe X
+    Matrix4x4 reflexionX = creerMatriceReflexion(true, false, false);
+    result = reflexionX.appliquer(point);
+    assert(result.x == -1 && result.y == 1 && result.z == 1);
+    cout << "Test Réflexion X réussi !\n";
+
+    // Test de projection perspective
+    Vector3 projected = FaireProjectionPerspective(point, 2);
+    assert(abs(projected.x - 2.0 / 1) < 1e-6 && abs(projected.y - 2.0 / 1) < 1e-6 && projected.z == 2);
+    cout << "Test Projection Perspective réussi !\n";
+
+    cout << "Tous les tests unitaires sont passés avec succès !\n";
+}
+
+
+
 // Fonction principale
 int main() {
     Vector3 point;
     cout << "Entrez les coordonnees du point (x y z) : ";
-    cin >> point.x >> point.y >> point.z;
+    while (!saisirValeur(point.x) || !saisirValeur(point.y) || !saisirValeur(point.z));
 
     Matrix4x4 transformationTotale;
 
@@ -145,14 +228,15 @@ int main() {
         cout << "4. Cisaillement\n";
         cout << "5. Projection\n";
         cout << "6. Reflexion\n";
-        cout << "7. Quitter\n";
-        int choix;
-        cin >> choix;
+        cout << "7. Tests Unitaires\n";
+        cout << "8. Quitter\n";
+        int choix = saisirEntier(1, 8);
+
 
         if (choix == 1) {
             double tx, ty, tz;
             cout << "Entrez les valeurs de translation (tx ty tz) : ";
-            cin >> tx >> ty >> tz;
+            while (!saisirValeur(tx) || !saisirValeur(ty) || !saisirValeur(tz));
             transformationTotale = transformationTotale * creerMatriceTranslation(tx, ty, tz);
             Vector3 result = transformationTotale.appliquer(point);
             cout << "Resultat apres transformation : ";
@@ -161,7 +245,7 @@ int main() {
         else if (choix == 2) {
             double sx, sy, sz;
             cout << "Entrez les valeurs d echelle (sx sy sz) : ";
-            cin >> sx >> sy >> sz;
+            while (!saisirValeur(sx) || !saisirValeur(sy) || !saisirValeur(sz));
             transformationTotale = transformationTotale * creerMatriceEchelle(sx, sy, sz);
             Vector3 result = transformationTotale.appliquer(point);
             cout << "Resultat apres transformation : ";
@@ -169,11 +253,10 @@ int main() {
         }
         else if (choix == 3) {
             cout << "Choisissez l axe de rotation : X (1), Y (2), Z (3) : ";
-            int axe;
-            cin >> axe;
+            int axe = saisirEntier(1, 3);
             double angle;
             cout << "Entrez l angle en degres : ";
-            cin >> angle;
+            while (!saisirValeur(angle));
 
             if (axe == 1)
                 transformationTotale = transformationTotale * creerMatriceRotationX(angle);
@@ -188,7 +271,7 @@ int main() {
         else if (choix == 4) {  // Cisaillement
             double kxy, kxz, kyx, kyz, kzx, kzy;
             cout << "Entrez les coefficients de cisaillement (kxy kxz kyx kyz kzx kzy) : ";
-            cin >> kxy >> kxz >> kyx >> kyz >> kzx >> kzy;
+            while (!saisirValeur(kxy) || !saisirValeur(kxz) || !saisirValeur(kyx) || !saisirValeur(kyz) || !saisirValeur(kzx) || !saisirValeur(kzy));
             Matrix4x4 C = creerMatriceCisaillement(kxy, kxz, kyx, kyz, kzx, kzy);
             transformationTotale = transformationTotale * C;
             Vector3 result = transformationTotale.appliquer(point);
@@ -198,7 +281,7 @@ int main() {
         else if (choix == 5) {  // Projection
             double f;
             cout << "Entrez la nouvelle coordonee de z : ";
-            cin >> f;
+            while (!saisirValeur(f));
             Vector3 result = FaireProjectionPerspective(point, f);
             //ne mets pas a jour point je ne sais pas pourquoi
             //ou alors c'est qu'il faut mettre a jour transformation totale
@@ -208,19 +291,22 @@ int main() {
         }
         else if (choix == 6) {  // Réflexion
             bool rx, ry, rz;
-            cout << "Reflexion par rapport a X ? (1 = Oui, 0 = Non) : ";
-            cin >> rx;
-            cout << "Reflexion par rapport a Y ? (1 = Oui, 0 = Non) : ";
-            cin >> ry;
-            cout << "Reflexion par rapport a Z ? (1 = Oui, 0 = Non) : ";
-            cin >> rz;
-            Matrix4x4 R = creerMatriceReflexion(rx, ry, rz);
-            transformationTotale = transformationTotale * R;
+            cout << "Reflechir par rapport a X ? (1: Oui, 0: Non) : ";
+            rx = saisirEntier(0, 1);
+            cout << "Reflechir par rapport a Y ? (1: Oui, 0: Non) : ";
+            ry = saisirEntier(0, 1);
+            cout << "Reflechir par rapport a Z ? (1: Oui, 0: Non) : ";
+            rz = saisirEntier(0, 1);
+
+            transformationTotale = transformationTotale * creerMatriceReflexion(rx, ry, rz);
             Vector3 result = transformationTotale.appliquer(point);
             cout << "Resultat apres transformation : ";
             result.afficher();
         }
         else if (choix == 7) {
+            executerTests();
+        }
+        else if (choix == 8) {
             break;
         }
         else {
